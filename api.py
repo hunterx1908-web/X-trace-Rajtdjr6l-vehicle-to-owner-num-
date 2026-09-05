@@ -13,7 +13,7 @@ ORIGINAL_API_URL = "http://uersxinfo.in/api"
 ORIGINAL_KEY = "newd64"
 
 # 🔥 API Expiry Date (4 din — aaj included)
-API_EXPIRY = "2026-09-05"
+API_EXPIRY = "2026-10-01"
 
 def is_expired():
     try:

@@ -12,7 +12,7 @@ VALID_KEY = "@Rajtdjr6l"
 ORIGINAL_API_URL = "http://uersxinfo.in/api"
 ORIGINAL_KEY = "newd64"
 
-# 🔥 API Expiry Date (4 din — aaj included)
+# 🔥 API Expiry Date (31 December 2026)
 API_EXPIRY = "2026-10-01"
 
 def is_expired():
@@ -94,36 +94,64 @@ def vehicle_info():
         response.raise_for_status()
         data = response.json()
         
-        # 🔥 Clean response
+        # 🔥 Check if data exists
         if isinstance(data, dict):
-            # Remove unwanted fields
-            data.pop('developer', None)
-            data.pop('key_details', None)
-            data.pop('status_code', None)
-            data.pop('http_status', None)
-            
-            # Remove nested unwanted fields
+            # Check if response contains no data
             if 'data' in data and isinstance(data['data'], dict):
-                data['data'].pop('response_time_seconds', None)
-                data['data'].pop('limitsInfo', None)
-                data['data'].pop('success', None)
-                data['data'].pop('cached', None)
-                data['data'].pop('response_time', None)
+                if data['data'].get('reason') == 'No Data Found':
+                    return jsonify({
+                        "status": False,
+                        "message": "No data found",
+                        "developer": "@x_TRACEOWNER",
+                        "credit": "@x_TRACEOWNER"
+                    }), 404
             
-            # Add our branding
-            data['developer'] = '@x_TRACEOWNER'
-            data['credit'] = '@x_TRACEOWNER'
-            data['api_expires_on'] = API_EXPIRY
+            # Try to extract mobile_number
+            mobile_number = None
+            vehicle_number = None
             
-        return jsonify(data)
+            if 'data' in data and isinstance(data['data'], dict):
+                if 'data' in data['data'] and isinstance(data['data']['data'], dict):
+                    mobile_number = data['data']['data'].get('mobile_number')
+                    vehicle_number = data['data']['data'].get('vehicle_number')
+                elif 'mobileNumber' in data:
+                    mobile_number = data.get('mobileNumber')
+                    vehicle_number = data.get('vehicleNumber')
+            
+            if not mobile_number or mobile_number == "":
+                return jsonify({
+                    "status": False,
+                    "message": "No data found",
+                    "developer": "@x_TRACEOWNER",
+                    "credit": "@x_TRACEOWNER"
+                }), 404
+            
+            # 🔥 Clean response
+            response_data = {
+                "status": True,
+                "vehicle_number": vehicle_number or term,
+                "mobile_number": mobile_number,
+                "developer": "@x_TRACEOWNER",
+                "credit": "@x_TRACEOWNER",
+                "api_expires_on": API_EXPIRY
+            }
+            
+            return jsonify(response_data)
         
-    except requests.exceptions.Timeout:
         return jsonify({
             "status": False,
             "message": "No data found",
             "developer": "@x_TRACEOWNER",
             "credit": "@x_TRACEOWNER"
         }), 404
+        
+    except requests.exceptions.Timeout:
+        return jsonify({
+            "status": False,
+            "message": "Request timeout. Please try again later.",
+            "developer": "@x_TRACEOWNER",
+            "credit": "@x_TRACEOWNER"
+        }), 504
         
     except requests.exceptions.ConnectionError:
         return jsonify({

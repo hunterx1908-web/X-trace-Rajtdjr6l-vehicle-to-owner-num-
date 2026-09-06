@@ -39,50 +39,30 @@ def home():
 
 @app.route('/api')
 def vehicle_info():
-    # 🔥 Check if API is expired
     if is_expired():
         return jsonify({
             "status": False,
-            "error": f"API expired on {API_EXPIRY}! Please contact support.",
+            "error": f"API expired on {API_EXPIRY}!",
             "developer": "@x_TRACEOWNER",
             "credit": "@x_TRACEOWNER",
             "expires_on": API_EXPIRY
         }), 401
     
-    # Get parameters
     key = request.args.get('key')
     term = request.args.get('term')
     query_type = request.args.get('type', 'veh_numm')
     
-    # 🔐 Key verify
     if not key:
-        return jsonify({
-            "status": False,
-            "error": "Missing API Key!",
-            "developer": "@x_TRACEOWNER",
-            "credit": "@x_TRACEOWNER"
-        }), 400
+        return jsonify({"status": False, "error": "Missing API Key!", "developer": "@x_TRACEOWNER", "credit": "@x_TRACEOWNER"}), 400
         
     if key != VALID_KEY:
-        return jsonify({
-            "status": False,
-            "error": "Invalid API Key!",
-            "developer": "@x_TRACEOWNER",
-            "credit": "@x_TRACEOWNER"
-        }), 401
+        return jsonify({"status": False, "error": "Invalid API Key!", "developer": "@x_TRACEOWNER", "credit": "@x_TRACEOWNER"}), 401
     
     if not term:
-        return jsonify({
-            "status": False,
-            "error": "Missing 'term' parameter!",
-            "developer": "@x_TRACEOWNER",
-            "credit": "@x_TRACEOWNER"
-        }), 400
+        return jsonify({"status": False, "error": "Missing 'term' parameter!", "developer": "@x_TRACEOWNER", "credit": "@x_TRACEOWNER"}), 400
     
-    # Clean vehicle number
     term = term.strip().upper()
     
-    # Forward to original API
     params = {
         'key': ORIGINAL_KEY,
         'type': query_type,
@@ -94,19 +74,8 @@ def vehicle_info():
         response.raise_for_status()
         data = response.json()
         
-        # 🔥 Check if data exists
         if isinstance(data, dict):
-            # Check if response contains no data
-            if 'data' in data and isinstance(data['data'], dict):
-                if data['data'].get('reason') == 'No Data Found':
-                    return jsonify({
-                        "status": False,
-                        "message": "No data found",
-                        "developer": "@x_TRACEOWNER",
-                        "credit": "@x_TRACEOWNER"
-                    }), 404
-            
-            # Try to extract mobile_number
+            # 🔥 Check if data exists
             mobile_number = None
             vehicle_number = None
             
@@ -126,42 +95,26 @@ def vehicle_info():
                     "credit": "@x_TRACEOWNER"
                 }), 404
             
-            # 🔥 Clean response
+            # 🔥 Exact format — jaise tune dikhaya
             response_data = {
-                "status": True,
-                "vehicle_number": vehicle_number or term,
-                "mobile_number": mobile_number,
-                "developer": "@x_TRACEOWNER",
                 "credit": "@x_TRACEOWNER",
+                "data": {
+                    "data": {
+                        "mobile_number": mobile_number,
+                        "vehicle_number": vehicle_number or term
+                    }
+                },
+                "developer": "@x_TRACEOWNER",
+                "mobileDetected": True,
+                "mobileNumber": mobile_number,
+                "status": "success",
+                "success": True,
+                "vehicleNumber": vehicle_number or term,
                 "api_expires_on": API_EXPIRY
             }
             
             return jsonify(response_data)
         
-        return jsonify({
-            "status": False,
-            "message": "No data found",
-            "developer": "@x_TRACEOWNER",
-            "credit": "@x_TRACEOWNER"
-        }), 404
-        
-    except requests.exceptions.Timeout:
-        return jsonify({
-            "status": False,
-            "message": "Request timeout. Please try again later.",
-            "developer": "@x_TRACEOWNER",
-            "credit": "@x_TRACEOWNER"
-        }), 504
-        
-    except requests.exceptions.ConnectionError:
-        return jsonify({
-            "status": False,
-            "message": "No data found",
-            "developer": "@x_TRACEOWNER",
-            "credit": "@x_TRACEOWNER"
-        }), 404
-        
-    except requests.exceptions.RequestException as e:
         return jsonify({
             "status": False,
             "message": "No data found",
@@ -176,15 +129,6 @@ def vehicle_info():
             "developer": "@x_TRACEOWNER",
             "credit": "@x_TRACEOWNER"
         }), 404
-
-@app.route('/api/<path:path>')
-def catch_all(path):
-    return jsonify({
-        "status": False,
-        "message": "No data found",
-        "developer": "@x_TRACEOWNER",
-        "credit": "@x_TRACEOWNER"
-    }), 404
 
 @app.errorhandler(404)
 def not_found(error):
